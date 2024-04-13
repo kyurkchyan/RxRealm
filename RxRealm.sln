@@ -1,0 +1,43 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RxRealm", "RxRealm\RxRealm.csproj", "{E1088DCA-2FE0-426B-A563-03EF5EFAFC4E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RxRealm.Core", "RxRealm.Core\RxRealm.Core.csproj", "{D44F3F60-4894-4074-B406-DE73D0C0E1CC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RxRealm.CLI", "RxRealm.CLI\RxRealm.CLI.csproj", "{B2879CC9-1C2B-469D-A9F3-F035850F6F23}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RxRealm.Benchmarks", "RxRealm.Benchmarks\RxRealm.Benchmarks.csproj", "{F98F479B-E56B-41C7-8F56-255E3F9FB565}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{F39DCA88-FA76-46F1-B8FA-E6828F5A99BC}"
+	ProjectSection(SolutionItems) = preProject
+		Directory.Packages.props = Directory.Packages.props
+		Directory.Build.props = Directory.Build.props
+		global.json = global.json
+		.gitignore = .gitignore
+		.gitattributes = .gitattributes
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E1088DCA-2FE0-426B-A563-03EF5EFAFC4E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E1088DCA-2FE0-426B-A563-03EF5EFAFC4E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E1088DCA-2FE0-426B-A563-03EF5EFAFC4E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E1088DCA-2FE0-426B-A563-03EF5EFAFC4E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D44F3F60-4894-4074-B406-DE73D0C0E1CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D44F3F60-4894-4074-B406-DE73D0C0E1CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D44F3F60-4894-4074-B406-DE73D0C0E1CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D44F3F60-4894-4074-B406-DE73D0C0E1CC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B2879CC9-1C2B-469D-A9F3-F035850F6F23}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2879CC9-1C2B-469D-A9F3-F035850F6F23}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2879CC9-1C2B-469D-A9F3-F035850F6F23}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2879CC9-1C2B-469D-A9F3-F035850F6F23}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F98F479B-E56B-41C7-8F56-255E3F9FB565}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F98F479B-E56B-41C7-8F56-255E3F9FB565}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F98F479B-E56B-41C7-8F56-255E3F9FB565}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F98F479B-E56B-41C7-8F56-255E3F9FB565}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

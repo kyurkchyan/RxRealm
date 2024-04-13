@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <OutputType>Exe</OutputType>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="BenchmarkDotNet" />
+        <PackageReference Include="Nito.AsyncEx" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\RxRealm.Core\RxRealm.Core.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="products.realm" />
+      <Content Include="products.realm">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+
+</Project>

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<maui:ReactiveContentView
+    x:TypeArguments="viewModels:ProductViewModel"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:maui="clr-namespace:ReactiveUI.Maui;assembly=ReactiveUI.Maui"
+    xmlns:models="clr-namespace:RxRealm.Core.Models;assembly=RxRealm.Core"
+    xmlns:ffimage="clr-namespace:FFImageLoading.Maui;assembly=FFImageLoading.Maui"
+    xmlns:transformations="clr-namespace:FFImageLoading.Transformations;assembly=FFImageLoading.Maui"
+    xmlns:viewModels="clr-namespace:RxRealm.Core.ViewModels;assembly=RxRealm.Core"
+    x:Class="RxRealm.Pages.ProductCell"
+    HeightRequest="80">
+    <Grid
+        RowDefinitions="*,*"
+        ColumnSpacing="8"
+        RowSpacing="8"
+        Padding="16,8"
+        ColumnDefinitions="70,*">
+        <ffimage:CachedImage
+            Grid.Row="0"
+            Grid.Column="0"
+            Grid.RowSpan="2"
+            x:Name="ProductImage"
+            LoadingPlaceholder="placeholder.png"
+            WidthRequest="70"
+            HeightRequest="70"
+            Aspect="AspectFit"
+            VerticalOptions="Center">
+            <ffimage:CachedImage.Transformations>
+                <transformations:CircleTransformation />
+            </ffimage:CachedImage.Transformations>
+        </ffimage:CachedImage>
+        <Label
+            Grid.Row="0"
+            Grid.Column="1"
+            x:Name="ProductNameLabel"
+            FontSize="16"
+            FontAttributes="Bold"
+            VerticalTextAlignment="Center"
+            HorizontalTextAlignment="Start" />
+        <Label
+            Grid.Row="1"
+            Grid.Column="1"
+            x:Name="ProductPriceLabel"
+            FontSize="13"
+            VerticalTextAlignment="Center"
+            HorizontalTextAlignment="Start" />
+    </Grid>
+</maui:ReactiveContentView>

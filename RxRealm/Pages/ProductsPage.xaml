@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<maui:ReactiveContentPage
+    x:TypeArguments="viewModels:ProductsViewModel"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:maui="clr-namespace:ReactiveUI.Maui;assembly=ReactiveUI.Maui"
+    xmlns:dx="clr-namespace:DevExpress.Maui.CollectionView;assembly=DevExpress.Maui.CollectionView"
+    xmlns:pages="clr-namespace:RxRealm.Pages"
+    xmlns:viewModels="clr-namespace:RxRealm.Core.ViewModels;assembly=RxRealm.Core"
+    x:Class="RxRealm.Pages.ProductsPage">
+    <ContentPage.Content>
+        <Grid>
+            <dx:DXCollectionView
+                x:Name="ProductsCollectionView"
+                IsLoadMoreEnabled="True"
+                ItemSize="80">
+                <dx:DXCollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <pages:ProductCell />
+                    </DataTemplate>
+                </dx:DXCollectionView.ItemTemplate>
+            </dx:DXCollectionView>
+            <ActivityIndicator
+                x:Name="BusyIndicator"
+                VerticalOptions="Center"
+                HorizontalOptions="Center" />
+        </Grid>
+    </ContentPage.Content>
+</maui:ReactiveContentPage>

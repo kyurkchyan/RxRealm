@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <ItemGroup>
+        <PackageReference Include="Bogus"/>
+        <PackageReference Include="DynamicData"/>
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions"/>
+        <PackageReference Include="ReactiveUI"/>
+        <PackageReference Include="ReactiveUI.Fody"/>
+        <PackageReference Include="Realm"/>
+    </ItemGroup>
+</Project>
