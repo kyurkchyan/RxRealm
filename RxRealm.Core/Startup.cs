@@ -6,9 +6,10 @@ namespace RxRealm.Core;
 
 public static class Startup
 {
-    public static IServiceCollection AddCore(this IServiceCollection services)
-    {
-        return services.AddTransient<ProductsViewModel>()
-            .AddTransient<ProductsService>();
-    }
+    public static IServiceCollection AddCore(this IServiceCollection services) =>
+        services
+            .AddTransient<ProductsService>()
+            .AddTransient<PaginatedProductsViewModel>()
+            .AddTransient<VirtualizedProductsViewModel>()
+            .AddTransient<ProductsViewModel>();
 }

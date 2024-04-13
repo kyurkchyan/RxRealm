@@ -2,12 +2,20 @@
 
 namespace RxRealm;
 
-public partial class App : Application
+public partial class App
 {
     public App()
     {
         InitializeComponent();
 
-        MainPage = new NavigationPage(new ProductsPage());
+        MainPage = new TabbedPage
+        {
+            Children =
+            {
+                new NavigationPage(new PaginatedProductsPage()) { Title = "Paginated" },
+                new NavigationPage(new VirtualizedProductsPage()) { Title = "Virtualized" },
+                new NavigationPage(new ProductsPage()) { Title = "Direct" },
+            }
+        };
     }
 }

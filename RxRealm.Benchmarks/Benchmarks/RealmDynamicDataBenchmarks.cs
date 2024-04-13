@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using System.Reactive.Disposables;
-using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Reactive.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Engines;
@@ -14,7 +14,7 @@ using RxRealm.Core.ViewModels;
 namespace RxRealm.Benchmarks.Benchmarks;
 
 [MemoryDiagnoser]
-[SimpleJob(RunStrategy.ColdStart, iterationCount: 5)]
+[SimpleJob(RunStrategy.ColdStart, iterationCount:5)]
 public class RealmDynamicDataBenchmarks
 {
     private readonly CompositeDisposable _disposables = new();
@@ -35,6 +35,13 @@ public class RealmDynamicDataBenchmarks
     }
 
     [Benchmark]
+    public void LoadProductsFromRealm_WithSelection()
+    {
+        var products = _productsService.Realm.All<Product>().AsRealmCollection().Select(p => new ProductViewModel(p)).ToList();
+        Debug.WriteLine(products.Count);
+    }
+
+    [Benchmark]
     public void LoadProductsFromRealm_ToList()
     {
         var products = _productsService.Realm.All<Product>().ToList();
@@ -42,46 +49,60 @@ public class RealmDynamicDataBenchmarks
     }
 
     [Benchmark]
-    public void LoadProductsWith_Virtualization_After_Filtration_Transformation()
+    public void LoadProductsWith_WithDynamicDataTransformation()
     {
         var products = _productsService.Realm.All<Product>().AsRealmCollection()
-            .AsObservableChangeSet()
-            .Virtualise(Observable.Return(new VirtualRequest(0, 50)))
-            .Filter(item => item.IsValid)
-            .Transform(p => new ProductViewModel(p));
-        products.Subscribe(c => Console.WriteLine($"________________ Products count changed: {c.Count}"))
-            .DisposeWith(_disposables);
+                                       .AsObservableChangeSet()
+                                       .Filter(item => item.IsValid)
+                                       .Transform(p => new ProductViewModel(p));
+        products.Subscribe(c => Console.WriteLine($"________________ Products count changed: {c.TotalChanges}"))
+                .DisposeWith(_disposables);
+    }
+
+    [Benchmark]
+    public void LoadProductsWith_Virtualization_After_Filtration_Transformation()
+    {
+        Subject<VirtualRequest> pagination = new();
+        var products = _productsService.Realm.All<Product>().AsRealmCollection()
+                                       .AsObservableChangeSet()
+                                       .Virtualise(pagination)
+                                       .Filter(item => item.IsValid)
+                                       .Transform(p => new ProductViewModel(p));
+        products.Subscribe(c => Console.WriteLine($"________________ Products count changed: {c.TotalChanges}"))
+                .DisposeWith(_disposables);
+        pagination.OnNext(new VirtualRequest(0, 50));
     }
 
     [Benchmark]
     public void LoadProductsWith_Virtualization_Transformation()
     {
+        Subject<VirtualRequest> pagination = new();
         var products = _productsService.Realm.All<Product>().AsRealmCollection()
-            .AsObservableChangeSet()
-            .Virtualise(Observable.Return(new VirtualRequest(0, 50)))
-            .Transform(p => new ProductViewModel(p));
-        products.Subscribe(c => Console.WriteLine($"________________ Products count changed: {c.Count}"))
-            .DisposeWith(_disposables);
+                                       .AsObservableChangeSet()
+                                       .Virtualise(pagination)
+                                       .Transform(p => new ProductViewModel(p));
+        products.Subscribe(c => Console.WriteLine($"________________ Products count changed: {c.TotalChanges}"))
+                .DisposeWith(_disposables);
+        pagination.OnNext(new VirtualRequest(0, 50));
     }
 
     [Benchmark]
     public async Task LoadFirstPageOfProducts()
     {
-        var products = await _productsService.GetProductsAsync(query => query, 50);
+        var products = await _productsService.GetPaginatedProductsAsync(query => query, 50);
         await products.LoadNextPage().ToTask();
         products.Items.Connect()
-            .Subscribe(c => Console.WriteLine($"________________ Products count changed: {c.Count}"))
-            .DisposeWith(_disposables);
+                .Subscribe(c => Console.WriteLine($"________________ Products count changed: {c.TotalChanges}"))
+                .DisposeWith(_disposables);
     }
-
 
     [Benchmark]
     public async Task Load10PagesOfProducts()
     {
-        var products = await _productsService.GetProductsAsync(query => query, 50);
+        var products = await _productsService.GetPaginatedProductsAsync(query => query, 50);
         products.Items.Connect()
-            .Subscribe(c => Console.WriteLine($"________________ Products count changed: {c.Count}"))
-            .DisposeWith(_disposables);
+                .Subscribe(c => Console.WriteLine($"________________ Products count changed: {c.TotalChanges}"))
+                .DisposeWith(_disposables);
         for (var i = 0; i < 10; i++)
         {
             await products.LoadNextPage().ToTask();

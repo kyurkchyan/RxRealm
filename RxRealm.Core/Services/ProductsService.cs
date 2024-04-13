@@ -1,6 +1,8 @@
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using Bogus;
 using DynamicData;
+using DynamicData.Binding;
 using Realms;
 using RxRealm.Core.Models;
 
@@ -18,7 +20,7 @@ public class ProductsService(IFileSystemService fileSystemService)
         return Realm.GetInstance(databasePath);
     }
 
-    public async Task<PaginatedResults<Product>> GetProductsAsync(
+    public async Task<PaginatedResults<Product>> GetPaginatedProductsAsync(
         Func<IQueryable<Product>, IQueryable<Product>> expression,
         int pageSize,
         CancellationToken cancellationToken = default)
@@ -26,8 +28,42 @@ public class ProductsService(IFileSystemService fileSystemService)
         await InstallDatabaseIfNecessaryAsync(cancellationToken);
         var products = expression(Realm.All<Product>()).AsRealmCollection();
 
-        return new PaginatedResults<Product>(pageSize, pagination
-            => Observable.Return(GetPaginatedResponse(products, pagination)));
+        return new PaginatedResults<Product>(pageSize,
+                                             pagination
+                                                 => Observable.Return(GetPaginatedResponse(products, pagination)));
+    }
+
+    public async Task<IConnectableObservable<IVirtualChangeSet<Product>>> GetVirtualizedProductsAsync(
+        Func<IQueryable<Product>, IQueryable<Product>> expression,
+        IObservable<IVirtualRequest> pagination,
+        CancellationToken cancellationToken = default)
+    {
+        await InstallDatabaseIfNecessaryAsync(cancellationToken);
+        return expression(Realm.All<Product>())
+               .AsRealmCollection()
+               .AsObservableChangeSet()
+               .Virtualise(pagination)
+               .Replay(1);
+    }
+
+    public async Task<IConnectableObservable<IChangeSet<Product>>> GetProductsChangesetAsync(
+        Func<IQueryable<Product>, IQueryable<Product>> expression,
+        CancellationToken cancellationToken = default)
+    {
+        await InstallDatabaseIfNecessaryAsync(cancellationToken);
+        return expression(Realm.All<Product>())
+               .AsRealmCollection()
+               .AsObservableChangeSet()
+               .Replay(1);
+    }
+
+    public async Task<IEnumerable<Product>> GetProductsAsync(
+        Func<IQueryable<Product>, IQueryable<Product>> expression,
+        CancellationToken cancellationToken = default)
+    {
+        await InstallDatabaseIfNecessaryAsync(cancellationToken);
+        var products = expression(Realm.All<Product>()).AsRealmCollection();
+        return products;
     }
 
     public async Task InstallDatabaseIfNecessaryAsync(CancellationToken cancellationToken = default)
@@ -54,7 +90,7 @@ public class ProductsService(IFileSystemService fileSystemService)
             using var realm = GetRealm(databasePath);
             return realm.All<Product>().Any();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return false;
         }
@@ -66,10 +102,10 @@ public class ProductsService(IFileSystemService fileSystemService)
 
         var price = 1;
         var faker = new Faker<Product>()
-            .RuleFor(p => p.Id, Guid.NewGuid)
-            .RuleFor(p => p.Name, f => f.Commerce.ProductName())
-            .RuleFor(p => p.Price, f => price++)
-            .RuleFor(p => p.ImageUrl, f => f.Image.PicsumUrl());
+                    .RuleFor(p => p.Id, Guid.NewGuid)
+                    .RuleFor(p => p.Name, f => f.Commerce.ProductName())
+                    .RuleFor(p => p.Price, f => price++)
+                    .RuleFor(p => p.ImageUrl, f => f.Image.PicsumUrl());
         var products = faker.Generate(count);
 
         var current = 0;
@@ -89,12 +125,15 @@ public class ProductsService(IFileSystemService fileSystemService)
     }
 
     private static PaginatedResponse<T> GetPaginatedResponse<T>(IReadOnlyCollection<T> items,
-        IVirtualRequest pagination)
+                                                                IVirtualRequest pagination)
     {
         var result = items
-            .Skip(pagination.StartIndex)
-            .Take(pagination.Size)
-            .ToList();
-        return new PaginatedResponse<T>(result, result.Count, pagination.StartIndex, items.Count);
+                     .Skip(pagination.StartIndex)
+                     .Take(pagination.Size)
+                     .ToList();
+        return new PaginatedResponse<T>(result,
+                                        result.Count,
+                                        pagination.StartIndex,
+                                        items.Count);
     }
 }

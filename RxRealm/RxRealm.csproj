@@ -73,4 +73,10 @@
       <Folder Include="ViewModels\" />
     </ItemGroup>
 
+    <ItemGroup>
+      <MauiAsset Include="..\products.realm">
+        <Link>Resources/Raw/products.realm</Link>
+      </MauiAsset>
+    </ItemGroup>
+
 </Project>

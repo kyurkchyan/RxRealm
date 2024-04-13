@@ -8,16 +8,54 @@
     xmlns:dx="clr-namespace:DevExpress.Maui.CollectionView;assembly=DevExpress.Maui.CollectionView"
     xmlns:pages="clr-namespace:RxRealm.Pages"
     xmlns:viewModels="clr-namespace:RxRealm.Core.ViewModels;assembly=RxRealm.Core"
+    xmlns:ffimage="clr-namespace:FFImageLoading.Maui;assembly=FFImageLoading.Maui"
+    xmlns:transformations="clr-namespace:FFImageLoading.Transformations;assembly=FFImageLoading.Maui"
+    xmlns:models="clr-namespace:RxRealm.Core.Models;assembly=RxRealm.Core"
     x:Class="RxRealm.Pages.ProductsPage">
     <ContentPage.Content>
         <Grid>
             <dx:DXCollectionView
                 x:Name="ProductsCollectionView"
-                IsLoadMoreEnabled="True"
                 ItemSize="80">
                 <dx:DXCollectionView.ItemTemplate>
-                    <DataTemplate>
-                        <pages:ProductCell />
+                    <DataTemplate x:DataType="models:Product">
+                        <Grid
+                            RowDefinitions="*,*"
+                            ColumnSpacing="8"
+                            RowSpacing="8"
+                            Padding="16,8"
+                            ColumnDefinitions="70,*">
+                            <ffimage:CachedImage
+                                Grid.Row="0"
+                                Grid.Column="0"
+                                Grid.RowSpan="2"
+                                x:Name="ProductImage"
+                                Source="{Binding ImageUrl}"
+                                LoadingPlaceholder="placeholder.png"
+                                WidthRequest="70"
+                                HeightRequest="70"
+                                Aspect="AspectFit"
+                                VerticalOptions="Center">
+                                <ffimage:CachedImage.Transformations>
+                                    <transformations:CircleTransformation />
+                                </ffimage:CachedImage.Transformations>
+                            </ffimage:CachedImage>
+                            <Label
+                                Grid.Row="0"
+                                Grid.Column="1"
+                                Text="{Binding Name}"
+                                FontSize="16"
+                                FontAttributes="Bold"
+                                VerticalTextAlignment="Center"
+                                HorizontalTextAlignment="Start" />
+                            <Label
+                                Grid.Row="1"
+                                Grid.Column="1"
+                                Text="{Binding Price}"
+                                FontSize="13"
+                                VerticalTextAlignment="Center"
+                                HorizontalTextAlignment="Start" />
+                        </Grid>
                     </DataTemplate>
                 </dx:DXCollectionView.ItemTemplate>
             </dx:DXCollectionView>
