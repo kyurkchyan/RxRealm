@@ -10,6 +10,7 @@ public class ProductViewModel : ReactiveObject, IDisposable, IActivatableViewMod
 {
     public ProductViewModel(Product product)
     {
+        Id = product.Id;
         this.WhenActivated(disposables =>
         {
             product
@@ -29,6 +30,8 @@ public class ProductViewModel : ReactiveObject, IDisposable, IActivatableViewMod
                 .DisposeWith(disposables);
         });
     }
+
+    public Guid Id { get; }
 
     [ObservableAsProperty] public string? Name { get; }
     [ObservableAsProperty] public Uri? ImageUri { get; }

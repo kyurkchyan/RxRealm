@@ -7,39 +7,35 @@ using ReactiveUI;
 
 namespace RxRealm.Reactive;
 
-public class ReactiveContentView<T> : ReactiveUI.Maui.ReactiveContentView<T>, ICustomActivatableView
+public class ReactiveContentView<T> : ReactiveUI.Maui.ReactiveContentView<T>, ICustomActivatableView, IDisposable
     where T : class
 {
     private readonly BehaviorSubject<bool> _activator = new(true);
     private readonly IObservable<Unit> _activated;
     private readonly IObservable<Unit> _deactivated;
-    private readonly SerialDisposable _bindings = new();
+    private readonly CompositeDisposable _disposables = new();
 
-    public ReactiveContentView()
+    public ReactiveContentView() : this(Observable.Return(true))
     {
-        var activator = Observable.CombineLatest(this.WhenAnyValue(v => v.IsVisible), _activator)
-                                  .Select(items => items.All(x => x));
+    }
+
+    public ReactiveContentView(IObservable<bool> parentActivator)
+    {
+        var activator = Observable.CombineLatest([this.WhenAnyValue(v => v.IsVisible), _activator, parentActivator])
+                                  .Select(items => items.All(x => x))
+                                  .DistinctUntilChanged()
+                                  .Replay(1);
+
+        activator.Connect().DisposeWith(_disposables);
+
+        activator.Do(isActive => Debug.WriteLine($"{GetType().FullName} {GetHashCode()} is {(isActive ? "active" : "inactive")}"))
+                 .Subscribe()
+                 .DisposeWith(_disposables);
+
         _activated = activator.Where(isActive => isActive)
                               .Select(_ => Unit.Default);
         _deactivated = activator.Where(isActive => !isActive)
                                 .Select(_ => Unit.Default);
-    }
-
-    public ReactiveContentView(IObservable<bool> parentActivator) : this()
-    {
-        SetParent(parentActivator);
-    }
-
-    protected override void OnParentChanged()
-    {
-        base.OnParentChanged();
-        Debug.WriteLine($"Parent changed for {GetType().Name}");
-    }
-
-    protected override void OnHandlerChanged()
-    {
-        base.OnHandlerChanged();
-        Debug.WriteLine($"Handler changed for {GetType().Name}");
     }
 
     public IObservable<Unit> Activated => _activated.AsObservable();
@@ -55,8 +51,9 @@ public class ReactiveContentView<T> : ReactiveUI.Maui.ReactiveContentView<T>, IC
         _activator.OnNext(false);
     }
 
-    public void SetParent(IObservable<bool> parentActivator)
+    public void Dispose()
     {
-        _bindings.Disposable = this.BindActivationTo(parentActivator);
+        _activator.Dispose();
+        _disposables?.Dispose();
     }
 }

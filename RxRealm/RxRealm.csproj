@@ -61,7 +61,6 @@
         <PackageReference Include="Microsoft.Maui.Controls.Compatibility" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" />
         <PackageReference Include="ReactiveUI" />
-        <PackageReference Include="ReactiveUI.Fody" />
         <PackageReference Include="ReactiveUI.Maui" />
         <PackageReference Include="Splat.Microsoft.Extensions.DependencyInjection" />
     </ItemGroup>

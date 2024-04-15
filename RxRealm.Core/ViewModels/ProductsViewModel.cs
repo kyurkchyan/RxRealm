@@ -3,8 +3,8 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
-using RxRealm.Core.Extensions;
 using RxRealm.Core.Models;
+using RxRealm.Core.Reactive;
 using RxRealm.Core.Services;
 
 namespace RxRealm.Core.ViewModels;

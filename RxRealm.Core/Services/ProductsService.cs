@@ -66,6 +66,8 @@ public class ProductsService(IFileSystemService fileSystemService)
         return products;
     }
 
+    public Product? GetProduct(Guid id) => Realm.Find<Product>(id);
+
     public async Task InstallDatabaseIfNecessaryAsync(CancellationToken cancellationToken = default)
     {
         if (File.Exists(DatabasePath) && IsValidDatabase(DatabasePath))

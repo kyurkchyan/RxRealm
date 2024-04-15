@@ -5,11 +5,12 @@ using ReactiveUI;
 
 namespace RxRealm.Pages;
 
-public partial class ProductCell
+public partial class ProductDetailsView
 {
-    public ProductCell(IObservable<bool> parentActivator) : base(parentActivator)
+    public ProductDetailsView()
     {
         InitializeComponent();
+
         this.WhenActivated(disposables =>
         {
             this.OneWayBind(ViewModel, vm => vm.Name, v => v.ProductNameLabel.Text)
@@ -26,5 +27,13 @@ public partial class ProductCell
                 .BindTo(this, v => v.ProductImage.Source)
                 .DisposeWith(disposables);
         });
+    }
+
+    private void ShowDetailsClicked(object? sender, EventArgs e)
+    {
+        if (ViewModel?.Product != null)
+        {
+            Navigation.PushAsync(new ProductDetailsPage(ViewModel.Product.Id));
+        }
     }
 }

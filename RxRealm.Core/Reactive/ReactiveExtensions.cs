@@ -3,22 +3,16 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using ReactiveUI;
 
-namespace RxRealm.Core.Extensions;
+namespace RxRealm.Core.Reactive;
 
 public static class ReactiveExtensions
 {
-
-    public static IObservable<bool> GetIsActivated(this IActivatableViewModel @this) =>
-        @this.Activator.Activated.Select(_ => true)
-             .Merge(@this.Activator.Deactivated.Select(_ => false))
-             .Replay(1)
-             .RefCount();
-
     public static IConnectableObservable<bool> GetSharedIsActivated(this IActivatableViewModel @this)
     {
         IConnectableObservable<bool> connectableIsActivated = @this
-                                                              .GetIsActivated()
-                                                              .Publish();
+                                                              .Activator.Activated.Select(_ => true)
+                                                              .Merge(@this.Activator.Deactivated.Select(_ => false))
+                                                              .Replay(1);
         return connectableIsActivated;
     }
 
@@ -37,4 +31,16 @@ public static class ReactiveExtensions
                      .Subscribe(_ => @this.Activator.Deactivate(true))
         };
     }
+
+    public static IDisposable BindDisposable<T>(this IViewFor<T> @this, Func<T, IDisposable> disposableFactory) where T : class, IReactiveObject =>
+        @this.WhenAnyValue(x => x.ViewModel)
+             .WhereNotNull()
+             .Select(viewModel => Observable.Create<IDisposable>(observer =>
+             {
+                 IDisposable registration = disposableFactory(viewModel);
+                 observer.OnNext(registration);
+                 return registration;
+             }))
+             .Switch()
+             .Subscribe();
 }

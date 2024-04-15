@@ -1,9 +1,9 @@
 using ReactiveUI;
+using RxRealm.Core.Reactive;
 
 namespace RxRealm.Reactive;
 
-public interface ICustomActivatableView : IActivatableView, ICanActivate
+public interface ICustomActivatableView : IActivatableView, IManualActivatable
 {
-    public void Activate();
-    public void Deactivate();
+
 }

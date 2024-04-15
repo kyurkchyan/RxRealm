@@ -1,11 +1,10 @@
 using System.Diagnostics;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using RxRealm.Core;
-using RxRealm.Core.ViewModels;
 using DevExpress.Maui.CollectionView;
 using ReactiveUI;
-using RxRealm.Reactive;
+using RxRealm.Core;
+using RxRealm.Core.ViewModels;
 
 namespace RxRealm.Pages;
 
@@ -15,8 +14,13 @@ public partial class PaginatedProductsPage
     {
         InitializeComponent();
         ViewModel = ServiceLocator.Services.GetRequiredService<PaginatedProductsViewModel>();
-        var activator = this.GetIsActivated();
-        ProductsCollectionView.ItemTemplate = new DataTemplate(() => new ProductCell(activator));
+        ProductsCollectionView.ItemTemplate = new DataTemplate(() =>
+        {
+            var productCell = new ProductCell(Activator);
+            productCell.DisposeWith(Disposables);
+            return productCell;
+        });
+
         this.WhenActivated(disposables =>
         {
             this.OneWayBind(ViewModel, vm => vm.Products, v => v.ProductsCollectionView.ItemsSource)
@@ -40,5 +44,13 @@ public partial class PaginatedProductsPage
                 .BindTo(this, v => v.ProductsCollectionView.IsLoadMoreEnabled)
                 .DisposeWith(disposables);
         });
+    }
+
+    private void ProductsCollectionView_SelectionChanged(object? sender, CollectionViewSelectionChangedEventArgs e)
+    {
+        if (e.AddedItems.FirstOrDefault() is ProductViewModel product)
+        {
+            Navigation.PushAsync(new ProductDetailsPage(product.Id));
+        }
     }
 }
