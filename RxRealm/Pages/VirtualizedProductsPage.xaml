@@ -15,11 +15,6 @@
                 x:Name="ProductsCollectionView"
                 IsLoadMoreEnabled="True"
                 ItemSize="80">
-                <dx:DXCollectionView.ItemTemplate>
-                    <DataTemplate>
-                        <pages:ProductCell />
-                    </DataTemplate>
-                </dx:DXCollectionView.ItemTemplate>
             </dx:DXCollectionView>
             <ActivityIndicator
                 x:Name="BusyIndicator"

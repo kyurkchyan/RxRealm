@@ -5,6 +5,7 @@ using RxRealm.Core;
 using RxRealm.Core.ViewModels;
 using DevExpress.Maui.CollectionView;
 using ReactiveUI;
+using RxRealm.Reactive;
 
 namespace RxRealm.Pages;
 
@@ -14,6 +15,8 @@ public partial class VirtualizedProductsPage
     {
         InitializeComponent();
         ViewModel = ServiceLocator.Services.GetRequiredService<VirtualizedProductsViewModel>();
+        var activator = this.GetIsActivated();
+        ProductsCollectionView.ItemTemplate = new DataTemplate(() => new ProductCell(activator));
         this.WhenActivated(disposables =>
         {
             this.OneWayBind(ViewModel, vm => vm.Products, v => v.ProductsCollectionView.ItemsSource)

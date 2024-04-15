@@ -5,6 +5,7 @@ using RxRealm.Core;
 using RxRealm.Core.ViewModels;
 using DevExpress.Maui.CollectionView;
 using ReactiveUI;
+using RxRealm.Reactive;
 
 namespace RxRealm.Pages;
 
@@ -14,6 +15,8 @@ public partial class PaginatedProductsPage
     {
         InitializeComponent();
         ViewModel = ServiceLocator.Services.GetRequiredService<PaginatedProductsViewModel>();
+        var activator = this.GetIsActivated();
+        ProductsCollectionView.ItemTemplate = new DataTemplate(() => new ProductCell(activator));
         this.WhenActivated(disposables =>
         {
             this.OneWayBind(ViewModel, vm => vm.Products, v => v.ProductsCollectionView.ItemsSource)
@@ -22,8 +25,10 @@ public partial class PaginatedProductsPage
             this.OneWayBind(ViewModel, vm => vm.IsBusy, v => v.BusyIndicator.IsRunning)
                 .DisposeWith(disposables);
 
-            this.BindCommand(ViewModel, vm => vm.LoadMore, v => v.ProductsCollectionView,
-                    toEvent: nameof(DXCollectionView.LoadMore))
+            this.BindCommand(ViewModel,
+                             vm => vm.LoadMore,
+                             v => v.ProductsCollectionView,
+                             toEvent:nameof(DXCollectionView.LoadMore))
                 .DisposeWith(disposables);
 
             this.WhenAnyObservable(v => v.ViewModel!.LoadMore.IsExecuting)

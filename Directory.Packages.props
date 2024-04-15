@@ -21,5 +21,6 @@
     <PackageVersion Include="ReactiveUI.Maui" Version="19.6.1" />
     <PackageVersion Include="Realm" Version="11.7.0" />
     <PackageVersion Include="ShellProgressBar" Version="5.2.0" />
+    <PackageVersion Include="Splat.Microsoft.Extensions.DependencyInjection" Version="14.8.12" />
   </ItemGroup>
 </Project>

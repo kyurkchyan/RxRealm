@@ -1,8 +1,9 @@
-﻿using RxRealm.Core;
-using RxRealm.Core.Services;
-using DevExpress.Maui;
+﻿using DevExpress.Maui;
 using FFImageLoading.Maui;
 using Microsoft.Extensions.Logging;
+using RxRealm.Core;
+using RxRealm.Core.Services;
+using RxRealm.Reactive;
 using RxRealm.Services;
 
 namespace RxRealm;
@@ -23,8 +24,9 @@ public static class MauiProgram
             .UseDevExpress();
 
         builder.Services
-            .AddTransient<IFileSystemService, FileSystemService>()
-            .AddCore();
+               .AddTransient<IFileSystemService, FileSystemService>()
+               .AddCore()
+               .ConfigureReactiveUI();
 
 #if DEBUG
         builder.Logging.AddDebug();

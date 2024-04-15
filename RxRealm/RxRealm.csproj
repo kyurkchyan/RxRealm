@@ -63,14 +63,11 @@
         <PackageReference Include="ReactiveUI" />
         <PackageReference Include="ReactiveUI.Fody" />
         <PackageReference Include="ReactiveUI.Maui" />
+        <PackageReference Include="Splat.Microsoft.Extensions.DependencyInjection" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\RxRealm.Core\RxRealm.Core.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="ViewModels\" />
     </ItemGroup>
 
     <ItemGroup>

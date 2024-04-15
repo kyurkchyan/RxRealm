@@ -5,6 +5,7 @@ using System.Reactive.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Engines;
 using DynamicData;
+using DynamicData.Binding;
 using Realms;
 using RxRealm.Benchmarks.Services;
 using RxRealm.Core.Models;
@@ -79,6 +80,19 @@ public class RealmDynamicDataBenchmarks
         Subject<VirtualRequest> pagination = new();
         var products = _productsService.Realm.All<Product>().AsRealmCollection()
                                        .AsObservableChangeSet()
+                                       .Virtualise(pagination)
+                                       .Transform(p => new ProductViewModel(p));
+        products.Subscribe(c => Console.WriteLine($"________________ Products count changed: {c.TotalChanges}"))
+                .DisposeWith(_disposables);
+        pagination.OnNext(new VirtualRequest(0, 50));
+    }
+
+    [Benchmark]
+    public void LoadProductsWith_Virtualization_Transformation_ToObservableChangeSet()
+    {
+        Subject<VirtualRequest> pagination = new();
+        var products = _productsService.Realm.All<Product>().AsRealmCollection()
+                                       .ToObservableChangeSet<IRealmCollection<Product>, Product>()
                                        .Virtualise(pagination)
                                        .Transform(p => new ProductViewModel(p));
         products.Subscribe(c => Console.WriteLine($"________________ Products count changed: {c.TotalChanges}"))
