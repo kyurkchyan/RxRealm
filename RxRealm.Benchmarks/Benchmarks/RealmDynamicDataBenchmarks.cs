@@ -29,6 +29,15 @@ public class RealmDynamicDataBenchmarks
     }
 
     [Benchmark]
+    public void LoadProductsFromRealm_WithWrapperCollection()
+    {
+        var products = _productsService.Realm.All<Product>().AsRealmCollection();
+        var productsWrapperCollection = new RealmWrapperCollection<Product, ProductViewModel>(products, p => new ProductViewModel(p));
+        var firstTenProducts = productsWrapperCollection.Take(10).ToList();
+        Debug.WriteLine(firstTenProducts.Count);
+    }
+    
+    [Benchmark]
     public void LoadProductsFromRealm()
     {
         var products = _productsService.Realm.All<Product>().AsRealmCollection();

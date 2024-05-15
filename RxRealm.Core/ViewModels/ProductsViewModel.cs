@@ -35,20 +35,22 @@ public class ProductsViewModel : ReactiveObject, IActivatableViewModel, IDisposa
 
     private async Task LoadProducts(ProductsService productsService, CancellationToken cancellationToken = default)
     {
-        Products = await productsService.GetProductsAsync(products =>
-                                                          {
-                                                              if (PriceFilter.HasValue)
+        var products = await productsService.GetProductsAsync(products =>
                                                               {
-                                                                  products = products.Where(p => p.Price <= PriceFilter);
-                                                              }
+                                                                  if (PriceFilter.HasValue)
+                                                                  {
+                                                                      products = products.Where(p => p.Price <= PriceFilter);
+                                                                  }
 
-                                                              return products.OrderBy(p => p.Price);
-                                                          },
-                                                          cancellationToken);
+                                                                  return products.OrderBy(p => p.Price);
+                                                              },
+                                                              cancellationToken);
+
+        Products = new RealmWrapperCollection<Product, ProductViewModel>(products, p => new ProductViewModel(p));
     }
 
     [Reactive]
-    public IEnumerable<Product>? Products { get; private set; }
+    public IEnumerable<ProductViewModel>? Products { get; private set; }
 
     public decimal? PriceFilter { get; set; }
 

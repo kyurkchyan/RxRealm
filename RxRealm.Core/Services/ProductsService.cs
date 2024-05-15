@@ -57,7 +57,7 @@ public class ProductsService(IFileSystemService fileSystemService)
                .Replay(1);
     }
 
-    public async Task<IEnumerable<Product>> GetProductsAsync(
+    public async Task<IRealmCollection<Product>> GetProductsAsync(
         Func<IQueryable<Product>, IQueryable<Product>> expression,
         CancellationToken cancellationToken = default)
     {
