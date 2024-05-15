@@ -14,7 +14,7 @@ public partial class App
             {
                 new NavigationPage(new PaginatedProductsPage()) { Title = "Paginated" },
                 new NavigationPage(new VirtualizedProductsPage()) { Title = "Virtualized" },
-                new NavigationPage(new ProductsPage()) { Title = "Direct" },
+                new NavigationPage(new ProductsPage()) { Title = "Wrapper Collection" },
             }
         };
     }
