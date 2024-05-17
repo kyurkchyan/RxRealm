@@ -12,5 +12,6 @@ public static class Startup
             .AddTransient<PaginatedProductsViewModel>()
             .AddTransient<VirtualizedProductsViewModel>()
             .AddTransient<WrapperCollectionProductsViewModel>()
+            .AddTransient<ProductsViewModel>()
             .AddTransient<ProductDetailsViewModel>();
 }

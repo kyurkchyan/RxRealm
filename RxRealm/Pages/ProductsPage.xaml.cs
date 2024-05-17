@@ -5,24 +5,21 @@ using RxRealm.Core.ViewModels;
 
 namespace RxRealm.Pages;
 
-public partial class WrapperCollectionProductsPage
+public partial class ProductsPage
 {
-    public WrapperCollectionProductsPage()
+    public ProductsPage()
     {
         InitializeComponent();
-        ViewModel = ServiceLocator.Services.GetRequiredService<WrapperCollectionProductsViewModel>();
+        ViewModel = ServiceLocator.Services.GetRequiredService<ProductsViewModel>();
         ProductsCollectionView.ItemTemplate = new DataTemplate(() =>
         {
-            var productCell = new ProductViewModelCell(Activator);
-            productCell.DisposeWith(Disposables);
+            var productCell = new ProductCell();
             return productCell;
         });
         
         ProductsCollectionView.SelectedItemTemplate = new DataTemplate(() =>
         {
-            var productCell = new ProductViewModelCell(Activator);
-            productCell.BackgroundColor = Colors.Gray;
-            productCell.DisposeWith(Disposables);
+            var productCell = new ProductCell { BackgroundColor = Colors.Gray };
             return productCell;
         });
 

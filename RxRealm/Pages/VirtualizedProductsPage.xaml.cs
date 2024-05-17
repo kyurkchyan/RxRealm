@@ -17,7 +17,7 @@ public partial class VirtualizedProductsPage
 
         ProductsCollectionView.ItemTemplate = new DataTemplate(() =>
         {
-            var productCell = new ProductCell(Activator);
+            var productCell = new ProductViewModelCell(Activator);
             productCell.DisposeWith(Disposables);
             return productCell;
         });

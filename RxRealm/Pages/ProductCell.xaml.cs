@@ -1,29 +1,22 @@
-using System.Reactive.Disposables;
-using System.Reactive.Linq;
-using ReactiveUI;
+using RxRealm.Core.Models;
 
 namespace RxRealm.Pages;
 
 public partial class ProductCell
 {
-    public ProductCell(IObservable<bool> parentActivator) : base(parentActivator)
+    public ProductCell()
     {
         InitializeComponent();
-        this.WhenActivated(disposables =>
+    }
+
+    protected override void OnBindingContextChanged()
+    {
+        base.OnBindingContextChanged();
+        if (BindingContext is Product product)
         {
-            this.OneWayBind(ViewModel, vm => vm.Name, v => v.ProductNameLabel.Text)
-                .DisposeWith(disposables);
-            this.OneWayBind(ViewModel,
-                            vm => vm.Price,
-                            v => v.ProductPriceLabel.Text,
-                            price => price.ToString("C"))
-                .DisposeWith(disposables);
-            this.WhenAnyValue(v => v.ViewModel!.ImageUri)
-                .Do(_ => ProductImage.Source = null)
-                .WhereNotNull()
-                .Select(imageUrl => new UriImageSource { Uri = imageUrl })
-                .BindTo(this, v => v.ProductImage.Source)
-                .DisposeWith(disposables);
-        });
+            ProductImage.Source = product.ImageUrl != null ? new UriImageSource { Uri = new Uri(product.ImageUrl) } : null;
+            ProductNameLabel.Text = product.Name ?? "";
+            ProductPriceLabel.Text = product.Price.ToString("C");
+        }
     }
 }
