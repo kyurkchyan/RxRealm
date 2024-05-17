@@ -11,11 +11,14 @@ namespace RxRealm.Core.ViewModels;
 
 public class ProductsViewModel : ReactiveObject, IActivatableViewModel, IDisposable
 {
-    public CompositeDisposable Disposables { get; } = new();
+    private readonly SerialDisposable _productsCollection = new();
+    private CompositeDisposable Disposables { get; } = new();
 
     public ProductsViewModel(ProductsService productsService)
     {
         var isActivated = this.GetSharedIsActivated();
+
+        _productsCollection.DisposeWith(Disposables);
 
         Load = ReactiveCommand.CreateFromTask(ct => LoadProducts(productsService, ct));
         Load.DisposeWith(Disposables);
@@ -46,7 +49,9 @@ public class ProductsViewModel : ReactiveObject, IActivatableViewModel, IDisposa
                                                               },
                                                               cancellationToken);
 
-        Products = new RealmWrapperCollection<Product, ProductViewModel>(products, p => new ProductViewModel(p));
+        var productsCollection = new RealmWrapperCollection<Product, ProductViewModel>(products, p => new ProductViewModel(p));
+        _productsCollection.Disposable = productsCollection;
+        Products = productsCollection;
     }
 
     [Reactive]

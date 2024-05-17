@@ -6,20 +6,15 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:dx="clr-namespace:DevExpress.Maui.CollectionView;assembly=DevExpress.Maui.CollectionView"
     xmlns:viewModels="clr-namespace:RxRealm.Core.ViewModels;assembly=RxRealm.Core"
-    xmlns:ffimage="clr-namespace:FFImageLoading.Maui;assembly=FFImageLoading.Maui"
-    xmlns:transformations="clr-namespace:FFImageLoading.Transformations;assembly=FFImageLoading.Maui"
-    xmlns:models="clr-namespace:RxRealm.Core.Models;assembly=RxRealm.Core"
     xmlns:base="clr-namespace:RxRealm.Pages.Base"
     x:Class="RxRealm.Pages.ProductsPage">
     <ContentPage.Content>
         <Grid>
             <dx:DXCollectionView
                 x:Name="ProductsCollectionView"
-                IsLoadMoreEnabled="True"
                 SelectionMode="Single"
                 SelectionChanged="ProductsCollectionView_SelectionChanged"
-                ItemSize="80">
-            </dx:DXCollectionView>
+                ItemSize="80" />
             <ActivityIndicator
                 x:Name="BusyIndicator"
                 VerticalOptions="Center"
