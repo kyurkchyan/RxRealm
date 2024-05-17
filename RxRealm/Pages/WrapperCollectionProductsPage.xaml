@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <base:BasePage
-    x:TypeArguments="viewModels:ProductsViewModel"
+    x:TypeArguments="viewModels:WrapperCollectionProductsViewModel"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:dx="clr-namespace:DevExpress.Maui.CollectionView;assembly=DevExpress.Maui.CollectionView"
     xmlns:viewModels="clr-namespace:RxRealm.Core.ViewModels;assembly=RxRealm.Core"
     xmlns:base="clr-namespace:RxRealm.Pages.Base"
-    x:Class="RxRealm.Pages.ProductsPage">
+    x:Class="RxRealm.Pages.WrapperCollectionProductsPage"
+    x:DataType="viewModels:WrapperCollectionProductsViewModel">
     <ContentPage.Content>
         <Grid
             RowDefinitions="Auto,*"
@@ -41,6 +42,7 @@
                 Grid.Row="1"
                 Grid.ColumnSpan="3"
                 x:Name="ProductsCollectionView"
+                ItemsSource="{Binding Products}"
                 SelectionMode="Single"
                 ItemSize="80" />
             <ActivityIndicator

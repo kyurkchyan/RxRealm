@@ -1,5 +1,8 @@
 using System.Collections;
 using System.Collections.Specialized;
+using System.Diagnostics;
+using System.Reactive.Disposables;
+using DynamicData.Binding;
 using Realms;
 using Splat;
 
@@ -9,6 +12,7 @@ public class RealmWrapperCollection<T, TViewModel> : INotifyCollectionChanged, I
     where T : IRealmObject
     where TViewModel : class, IDisposable, IModelWrapperViewModel<T>
 {
+    private readonly CompositeDisposable _disposables = new();
     private readonly IRealmCollection<T> _realmCollection;
     private readonly Func<T, TViewModel> _viewModelFactory;
     private readonly MemoizingMRUCache<int, TViewModel> _viewModelCache;
@@ -18,6 +22,16 @@ public class RealmWrapperCollection<T, TViewModel> : INotifyCollectionChanged, I
         _realmCollection = realmCollection;
         _viewModelFactory = viewModelFactory;
         _viewModelCache = new MemoizingMRUCache<int, TViewModel>((index, _) => _viewModelFactory(_realmCollection[index]), 1000, viewModel => viewModel.Dispose());
+        Disposable
+            .Create(() => _viewModelCache.InvalidateAll())
+            .DisposeWith(_disposables);
+        this
+            .ObserveCollectionChanges()
+            .Subscribe(args =>
+            {
+                Debug.WriteLine($"RealmWrapperCollection<{typeof(T).FullName}, {typeof(TViewModel).FullName}> changed - Actions:{args.EventArgs.Action.ToString()}, Old Index: {args.EventArgs.OldStartingIndex}, New Index: {args.EventArgs.NewStartingIndex}");
+            })
+            .DisposeWith(_disposables);
     }
 
     public int Count => _realmCollection.Count;
@@ -56,7 +70,7 @@ public class RealmWrapperCollection<T, TViewModel> : INotifyCollectionChanged, I
 
     public void Dispose()
     {
-        _viewModelCache.InvalidateAll();
+        _disposables.Dispose();
     }
 
     private class LazyEnumerator(IEnumerator<T> collectionEnumerator, Func<T, TViewModel> viewModelFactory) : IEnumerator<TViewModel>

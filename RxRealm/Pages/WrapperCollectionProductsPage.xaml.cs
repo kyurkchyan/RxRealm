@@ -5,12 +5,12 @@ using RxRealm.Core.ViewModels;
 
 namespace RxRealm.Pages;
 
-public partial class ProductsPage
+public partial class WrapperCollectionProductsPage
 {
-    public ProductsPage()
+    public WrapperCollectionProductsPage()
     {
         InitializeComponent();
-        ViewModel = ServiceLocator.Services.GetRequiredService<ProductsViewModel>();
+        ViewModel = ServiceLocator.Services.GetRequiredService<WrapperCollectionProductsViewModel>();
         ProductsCollectionView.ItemTemplate = new DataTemplate(() =>
         {
             var productCell = new ProductCell(Activator);
@@ -39,7 +39,7 @@ public partial class ProductsPage
 
             this.Bind(ViewModel, vm => vm.SelectedProduct, v => v.ProductsCollectionView.SelectedItem)
                 .DisposeWith(Disposables);
-
+            
             this.OneWayBind(ViewModel, vm => vm.Products, v => v.ProductsCollectionView.ItemsSource)
                 .DisposeWith(disposables);
 

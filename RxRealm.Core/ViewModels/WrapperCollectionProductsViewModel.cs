@@ -9,12 +9,12 @@ using RxRealm.Core.Services;
 
 namespace RxRealm.Core.ViewModels;
 
-public class ProductsViewModel : ReactiveObject, IActivatableViewModel, IDisposable
+public class WrapperCollectionProductsViewModel : ReactiveObject, IActivatableViewModel, IDisposable
 {
     private RealmWrapperCollection<Product, ProductViewModel>? _products;
     private CompositeDisposable Disposables { get; } = new();
 
-    public ProductsViewModel(ProductsService productsService)
+    public WrapperCollectionProductsViewModel(ProductsService productsService)
     {
         var isActivated = this.GetSharedIsActivated();
         
@@ -92,7 +92,7 @@ public class ProductsViewModel : ReactiveObject, IActivatableViewModel, IDisposa
     }
 
     [Reactive]
-    public IEnumerable<ProductViewModel>? Products { get; private set; }
+    public RealmWrapperCollection<Product, ProductViewModel>? Products { get; private set; }
 
     [Reactive]
     public ProductViewModel? SelectedProduct { get; set; }

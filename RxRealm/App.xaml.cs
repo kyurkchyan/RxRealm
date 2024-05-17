@@ -12,9 +12,9 @@ public partial class App
         {
             Children =
             {
-                new NavigationPage(new ProductsPage()) { Title = "Wrapper Collection" },
                 new NavigationPage(new PaginatedProductsPage()) { Title = "Paginated" },
-                new NavigationPage(new VirtualizedProductsPage()) { Title = "Virtualized" }
+                new NavigationPage(new VirtualizedProductsPage()) { Title = "Virtualized" },
+                new NavigationPage(new WrapperCollectionProductsPage()) { Title = "Wrapper Collection" },
             }
         };
     }
