@@ -7,7 +7,7 @@ namespace RxRealm.Core.ViewModels;
 
 public class RealmWrapperCollection<T, TViewModel> : INotifyCollectionChanged, IReadOnlyList<TViewModel>, IList, IDisposable
     where T : IRealmObject
-    where TViewModel : class, IDisposable
+    where TViewModel : class, IDisposable, IModelWrapperViewModel<T>
 {
     private readonly IRealmCollection<T> _realmCollection;
     private readonly Func<T, TViewModel> _viewModelFactory;
@@ -34,6 +34,15 @@ public class RealmWrapperCollection<T, TViewModel> : INotifyCollectionChanged, I
     public TViewModel this[int index] => GetItemAt(index);
 
     private TViewModel GetItemAt(int index) => _viewModelCache.Get(index);
+
+    public bool Contains(object? value) => value is TViewModel && _viewModelCache.CachedValues().Contains(value);
+
+    public int IndexOf(object? value)
+    {
+        if (value is not TViewModel viewModel) throw new ArgumentException($"Value must be of type {typeof(TViewModel).FullName}", nameof(value));
+
+        return _realmCollection.IndexOf(viewModel.Model);
+    }
 
     public event NotifyCollectionChangedEventHandler? CollectionChanged
     {
@@ -78,10 +87,6 @@ public class RealmWrapperCollection<T, TViewModel> : INotifyCollectionChanged, I
     {
         throw new NotImplementedException();
     }
-
-    public bool Contains(object? value) => throw new NotImplementedException();
-
-    public int IndexOf(object? value) => throw new NotImplementedException();
 
     public void Insert(int index, object? value)
     {

@@ -6,10 +6,11 @@ using RxRealm.Core.Models;
 
 namespace RxRealm.Core.ViewModels;
 
-public class ProductViewModel : ReactiveObject, IDisposable, IActivatableViewModel
+public class ProductViewModel : ReactiveObject, IDisposable, IActivatableViewModel, IModelWrapperViewModel<Product>
 {
     public ProductViewModel(Product product)
     {
+        Model = product;
         Id = product.Id;
         this.WhenActivated(disposables =>
         {
@@ -30,6 +31,8 @@ public class ProductViewModel : ReactiveObject, IDisposable, IActivatableViewMod
                 .DisposeWith(disposables);
         });
     }
+    
+    public Product Model { get; }
 
     public Guid Id { get; }
 

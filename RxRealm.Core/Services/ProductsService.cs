@@ -126,6 +126,21 @@ public class ProductsService(IFileSystemService fileSystemService)
         }
     }
 
+    public async Task AddAsync(Product product)
+    {
+        await Realm.WriteAsync(() => Realm.Add(product));
+    }
+
+    public async Task RemoveAsync(Product product)
+    {
+        await Realm.WriteAsync(() => Realm.Remove(product));
+    }
+
+    public async Task UpdateAsync(Product product, Action<Product> updateAction)
+    {
+        await Realm.WriteAsync(() => updateAction(product));
+    }
+
     private static PaginatedResponse<T> GetPaginatedResponse<T>(IReadOnlyCollection<T> items,
                                                                 IVirtualRequest pagination)
     {
