@@ -70,7 +70,9 @@ public class WrapperCollectionProductsViewModel : ReactiveObject, IActivatableVi
 
     private async Task<Unit> RemoveProduct(ProductsService productsService)
     {
-        await productsService.RemoveAsync(SelectedProduct!.Model);
+        Product product = SelectedProduct!.Model;
+        SelectedProduct = null;
+        await productsService.RemoveAsync(product);
         return Unit.Default;
     }
 

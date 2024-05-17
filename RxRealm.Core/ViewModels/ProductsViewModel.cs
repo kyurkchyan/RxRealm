@@ -70,8 +70,9 @@ public class ProductsViewModel : ReactiveObject, IActivatableViewModel, IDisposa
 
     private async Task<Unit> RemoveProduct(ProductsService productsService)
     {
-        await productsService.RemoveAsync(SelectedProduct!);
+        var productToDelete = SelectedProduct!;
         SelectedProduct = null;
+        await productsService.RemoveAsync(productToDelete);
         return Unit.Default;
     }
 

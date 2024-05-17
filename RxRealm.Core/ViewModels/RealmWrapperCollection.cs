@@ -1,6 +1,6 @@
 using System.Collections;
 using System.Collections.Specialized;
-using System.Diagnostics;
+using System.Reactive;
 using System.Reactive.Disposables;
 using DynamicData.Binding;
 using Realms;
@@ -25,12 +25,9 @@ public class RealmWrapperCollection<T, TViewModel> : INotifyCollectionChanged, I
         Disposable
             .Create(() => _viewModelCache.InvalidateAll())
             .DisposeWith(_disposables);
-        this
+        _realmCollection
             .ObserveCollectionChanges()
-            .Subscribe(args =>
-            {
-                Debug.WriteLine($"RealmWrapperCollection<{typeof(T).FullName}, {typeof(TViewModel).FullName}> changed - Actions:{args.EventArgs.Action.ToString()}, Old Index: {args.EventArgs.OldStartingIndex}, New Index: {args.EventArgs.NewStartingIndex}");
-            })
+            .Subscribe(HandleCollectionChanges)
             .DisposeWith(_disposables);
     }
 
@@ -58,15 +55,83 @@ public class RealmWrapperCollection<T, TViewModel> : INotifyCollectionChanged, I
         return _realmCollection.IndexOf(viewModel.Model);
     }
 
-    public event NotifyCollectionChangedEventHandler? CollectionChanged
-    {
-        add => _realmCollection.CollectionChanged += value;
-        remove => _realmCollection.CollectionChanged -= value;
-    }
+    public event NotifyCollectionChangedEventHandler? CollectionChanged;
 
     public IEnumerator<TViewModel> GetEnumerator() => new LazyEnumerator(_realmCollection.GetEnumerator(), _viewModelFactory);
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    private void HandleCollectionChanges(EventPattern<NotifyCollectionChangedEventArgs> args)
+    {
+        var notifyCollectionChangedEventArgs = args.EventArgs;
+        NotifyCollectionChangedEventArgs newArgs;
+
+        List<TViewModel>? oldItems = notifyCollectionChangedEventArgs.OldItems?.Count > 0
+                                         ? Enumerable.Range(notifyCollectionChangedEventArgs.OldStartingIndex, notifyCollectionChangedEventArgs.OldItems.Count)
+                                                     .Select(index => _viewModelCache.TryGet(index, out TViewModel? viewModel) ? viewModel : null)
+                                                     .Where(item => item != null)
+                                                     .Select(item => item!)
+                                                     .ToList()
+                                         : null;
+
+        List<TViewModel>? newItems = notifyCollectionChangedEventArgs.NewItems?.Count > 0
+                                         ? Enumerable.Range(notifyCollectionChangedEventArgs.NewStartingIndex, notifyCollectionChangedEventArgs.NewItems.Count)
+                                                     .Select(index => _viewModelCache.TryGet(index, out TViewModel? viewModel) ? viewModel : null)
+                                                     .Where(item => item != null)
+                                                     .Select(item => item!)
+                                                     .ToList()
+                                         : null;
+
+        switch (notifyCollectionChangedEventArgs.Action)
+        {
+            case NotifyCollectionChangedAction.Add:
+            {
+                newArgs = new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add,
+                                                               newItems,
+                                                               notifyCollectionChangedEventArgs.NewStartingIndex);
+                break;
+            }
+
+            case NotifyCollectionChangedAction.Remove:
+            {
+                newArgs = new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove,
+                                                               oldItems,
+                                                               notifyCollectionChangedEventArgs.OldStartingIndex);
+                break;
+            }
+
+            case NotifyCollectionChangedAction.Replace:
+            {
+                newArgs = new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace,
+                                                               newItems!,
+                                                               oldItems!,
+                                                               notifyCollectionChangedEventArgs.OldStartingIndex);
+                break;
+            }
+
+            case NotifyCollectionChangedAction.Move:
+            {
+                newArgs = new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Move,
+                                                               newItems,
+                                                               notifyCollectionChangedEventArgs.NewStartingIndex,
+                                                               notifyCollectionChangedEventArgs.OldStartingIndex);
+                break;
+            }
+
+            case NotifyCollectionChangedAction.Reset:
+            {
+                newArgs = new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset);
+                break;
+            }
+
+            default:
+            {
+                throw new ArgumentOutOfRangeException(nameof(args));
+            }
+        }
+
+        CollectionChanged?.Invoke(this, newArgs);
+    }
 
     public void Dispose()
     {
