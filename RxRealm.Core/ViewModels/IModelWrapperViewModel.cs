@@ -1,6 +1,9 @@
+using RxRealm.Core.Models;
+
 namespace RxRealm.Core.ViewModels;
 
-public interface IModelWrapperViewModel<out T>
+public interface IModelWrapperViewModel<out TModel, out TId> where TModel : IHasId<TId>
 {
-    public T Model { get; }
+    TModel Model { get; }
+    public TId Id { get; }
 }

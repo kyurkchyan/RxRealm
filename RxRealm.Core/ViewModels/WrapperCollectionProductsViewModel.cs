@@ -11,7 +11,7 @@ namespace RxRealm.Core.ViewModels;
 
 public class WrapperCollectionProductsViewModel : ReactiveObject, IActivatableViewModel, IDisposable
 {
-    private RealmWrapperCollection<Product, ProductViewModel>? _products;
+    private RealmWrapperCollection<Product, ProductViewModel, Guid>? _products;
     private CompositeDisposable Disposables { get; } = new();
 
     public WrapperCollectionProductsViewModel(ProductsService productsService)
@@ -90,11 +90,11 @@ public class WrapperCollectionProductsViewModel : ReactiveObject, IActivatableVi
                                                               cancellationToken);
 
         _products?.Dispose();
-        Products = _products = new RealmWrapperCollection<Product, ProductViewModel>(products, p => new ProductViewModel(p));
+        Products = _products = new RealmWrapperCollection<Product, ProductViewModel, Guid>(products, p => new ProductViewModel(p));
     }
 
     [Reactive]
-    public RealmWrapperCollection<Product, ProductViewModel>? Products { get; private set; }
+    public RealmWrapperCollection<Product, ProductViewModel, Guid>? Products { get; private set; }
 
     [Reactive]
     public ProductViewModel? SelectedProduct { get; set; }

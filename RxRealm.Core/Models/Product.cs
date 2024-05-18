@@ -2,7 +2,7 @@ using Realms;
 
 namespace RxRealm.Core.Models;
 
-public partial class Product : IRealmObject
+public partial class Product : IRealmObject, IHasId<Guid>
 {
     [MapTo("_id")]
     [PrimaryKey]

@@ -4,24 +4,36 @@ using System.Reactive;
 using System.Reactive.Disposables;
 using DynamicData.Binding;
 using Realms;
+using RxRealm.Core.Models;
 using Splat;
 
 namespace RxRealm.Core.ViewModels;
 
-public class RealmWrapperCollection<T, TViewModel> : INotifyCollectionChanged, IReadOnlyList<TViewModel>, IList, IDisposable
-    where T : IRealmObject
-    where TViewModel : class, IDisposable, IModelWrapperViewModel<T>
+public class RealmWrapperCollection<TModel, TViewModel, TId> : INotifyCollectionChanged, IReadOnlyList<TViewModel>, IList, IDisposable
+    where TModel : IRealmObject, IHasId<TId>
+    where TViewModel : class, IDisposable, IModelWrapperViewModel<TModel, TId>
+    where TId : notnull
 {
+    const int CacheSize = 1000;
+    private int _maxAccessedIndex;
     private readonly CompositeDisposable _disposables = new();
-    private readonly IRealmCollection<T> _realmCollection;
-    private readonly Func<T, TViewModel> _viewModelFactory;
-    private readonly MemoizingMRUCache<int, TViewModel> _viewModelCache;
+    private readonly IRealmCollection<TModel> _realmCollection;
+    private readonly Func<TModel, TViewModel> _viewModelFactory;
+    private readonly MemoizingMRUCache<TId, TViewModel> _viewModelCache;
+    private readonly Dictionary<int, TViewModel> _indexToViewModel = new();
+    private readonly Dictionary<TViewModel, int> _viewModelToIndex = new();
 
-    public RealmWrapperCollection(IRealmCollection<T> realmCollection, Func<T, TViewModel> viewModelFactory)
+    private record ViewModelCreationContext(TModel Model, int Index);
+
+    public RealmWrapperCollection(IRealmCollection<TModel> realmCollection, Func<TModel, TViewModel> viewModelFactory)
     {
         _realmCollection = realmCollection;
         _viewModelFactory = viewModelFactory;
-        _viewModelCache = new MemoizingMRUCache<int, TViewModel>((index, _) => _viewModelFactory(_realmCollection[index]), 1000, viewModel => viewModel.Dispose());
+
+        _viewModelCache = new MemoizingMRUCache<TId, TViewModel>((_, creationContext) => CreateViewModel((ViewModelCreationContext)creationContext!),
+                                                                 CacheSize,
+                                                                 DisposeViewModel);
+
         Disposable
             .Create(() => _viewModelCache.InvalidateAll())
             .DisposeWith(_disposables);
@@ -33,9 +45,6 @@ public class RealmWrapperCollection<T, TViewModel> : INotifyCollectionChanged, I
 
     public int Count => _realmCollection.Count;
 
-    public bool IsFixedSize => false;
-    public bool IsReadOnly => true;
-
     object? IList.this[int index]
     {
         get => GetItemAt(index);
@@ -44,16 +53,30 @@ public class RealmWrapperCollection<T, TViewModel> : INotifyCollectionChanged, I
 
     public TViewModel this[int index] => GetItemAt(index);
 
-    private TViewModel GetItemAt(int index) => _viewModelCache.Get(index);
+    private TViewModel GetItemAt(int index)
+    {
+        if (index > _maxAccessedIndex)
+        {
+            _maxAccessedIndex = index;
+        }
 
-    public bool Contains(object? value) => value is TViewModel && _viewModelCache.CachedValues().Contains(value);
+        TModel model = _realmCollection[index];
+        var viewModel = GetViewModelFromCache(model, index);
+        return viewModel;
+    }
+
+    public bool Contains(object? value) => value is TViewModel viewModel && _realmCollection.Contains(viewModel.Model);
 
     public int IndexOf(object? value)
     {
         if (value is not TViewModel viewModel) throw new ArgumentException($"Value must be of type {typeof(TViewModel).FullName}", nameof(value));
-
         return _realmCollection.IndexOf(viewModel.Model);
     }
+
+    public bool IsFixedSize => false;
+    public bool IsReadOnly => true;
+    public bool IsSynchronized => false;
+    public object SyncRoot => _realmCollection;
 
     public event NotifyCollectionChangedEventHandler? CollectionChanged;
 
@@ -61,76 +84,93 @@ public class RealmWrapperCollection<T, TViewModel> : INotifyCollectionChanged, I
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
+    private TViewModel CreateViewModel(ViewModelCreationContext context)
+    {
+        (TModel model, int index) = context;
+        TViewModel viewModel = _viewModelFactory(model);
+        _viewModelToIndex[viewModel] = index;
+        _indexToViewModel[index] = viewModel;
+        return viewModel;
+    }
+
+    private TViewModel GetViewModelFromCache(TModel model, int index) => _viewModelCache.Get(model.Id, new ViewModelCreationContext(model, index));
+
+    private void DisposeViewModel(TViewModel viewModel)
+    {
+        _viewModelToIndex.Remove(viewModel, out int index);
+        _indexToViewModel.Remove(index);
+        viewModel.Dispose();
+    }
+
     private void HandleCollectionChanges(EventPattern<NotifyCollectionChangedEventArgs> args)
     {
         var notifyCollectionChangedEventArgs = args.EventArgs;
-        NotifyCollectionChangedEventArgs newArgs;
 
         List<TViewModel>? oldItems = notifyCollectionChangedEventArgs.OldItems?.Count > 0
-                                         ? Enumerable.Range(notifyCollectionChangedEventArgs.OldStartingIndex, notifyCollectionChangedEventArgs.OldItems.Count)
-                                                     .Select(index => _viewModelCache.TryGet(index, out TViewModel? viewModel) ? viewModel : null)
+                                         ? Enumerable.Range(notifyCollectionChangedEventArgs.OldStartingIndex, notifyCollectionChangedEventArgs.OldItems?.Count ?? 0)
+                                                     .Select(index =>
+                                                     {
+                                                         if (_indexToViewModel.TryGetValue(index, out TViewModel? viewModel))
+                                                         {
+                                                             _viewModelCache.Invalidate(viewModel.Id);
+                                                             return viewModel;
+                                                         }
+
+                                                         return null;
+                                                     })
                                                      .Where(item => item != null)
                                                      .Select(item => item!)
                                                      .ToList()
                                          : null;
 
-        List<TViewModel>? newItems = notifyCollectionChangedEventArgs.NewItems?.Count > 0
-                                         ? Enumerable.Range(notifyCollectionChangedEventArgs.NewStartingIndex, notifyCollectionChangedEventArgs.NewItems.Count)
-                                                     .Select(index => _viewModelCache.TryGet(index, out TViewModel? viewModel) ? viewModel : null)
-                                                     .Where(item => item != null)
-                                                     .Select(item => item!)
-                                                     .ToList()
+        List<TViewModel>? newItems = notifyCollectionChangedEventArgs.NewStartingIndex > 0
+                                         ? notifyCollectionChangedEventArgs.NewItems?.ToEnumerable<TModel>(notifyCollectionChangedEventArgs.NewStartingIndex)?
+                                                                           .Select(tuple =>
+                                                                           {
+                                                                               (TModel model, int index) = tuple;
+                                                                               return notifyCollectionChangedEventArgs.NewStartingIndex >= _maxAccessedIndex
+                                                                                          ? GetViewModelFromCache(model, index)
+                                                                                          : null;
+                                                                           })
+                                                                           .Where(item => item != null)
+                                                                           .Select(item => item!)
+                                                                           .ToList()
                                          : null;
 
-        switch (notifyCollectionChangedEventArgs.Action)
+        NotifyCollectionChangedEventArgs newArgs = notifyCollectionChangedEventArgs.Action switch
         {
-            case NotifyCollectionChangedAction.Add:
-            {
-                newArgs = new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add,
-                                                               newItems,
-                                                               notifyCollectionChangedEventArgs.NewStartingIndex);
-                break;
-            }
+            NotifyCollectionChangedAction.Add => new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, newItems, notifyCollectionChangedEventArgs.NewStartingIndex),
+            NotifyCollectionChangedAction.Remove => new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, oldItems, notifyCollectionChangedEventArgs.OldStartingIndex),
+            NotifyCollectionChangedAction.Replace => new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace,
+                                                                                          newItems!,
+                                                                                          oldItems!,
+                                                                                          notifyCollectionChangedEventArgs.OldStartingIndex),
+            NotifyCollectionChangedAction.Move => new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Move,
+                                                                                       newItems,
+                                                                                       notifyCollectionChangedEventArgs.NewStartingIndex,
+                                                                                       notifyCollectionChangedEventArgs.OldStartingIndex),
+            NotifyCollectionChangedAction.Reset => new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset),
+            _ => throw new ArgumentOutOfRangeException(nameof(args))
+        };
 
-            case NotifyCollectionChangedAction.Remove:
-            {
-                newArgs = new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove,
-                                                               oldItems,
-                                                               notifyCollectionChangedEventArgs.OldStartingIndex);
-                break;
-            }
+        RecalculateIndexes();
+        CollectionChanged?.Invoke(this, newArgs);
+    }
 
-            case NotifyCollectionChangedAction.Replace:
+    private void RecalculateIndexes()
+    {
+        var viewModels = _indexToViewModel.Values.ToList();
+        _indexToViewModel.Clear();
+        _viewModelToIndex.Clear();
+        foreach (TViewModel viewModel in viewModels)
+        {
+            int index = IndexOf(viewModel);
+            if (index >= 0)
             {
-                newArgs = new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace,
-                                                               newItems!,
-                                                               oldItems!,
-                                                               notifyCollectionChangedEventArgs.OldStartingIndex);
-                break;
-            }
-
-            case NotifyCollectionChangedAction.Move:
-            {
-                newArgs = new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Move,
-                                                               newItems,
-                                                               notifyCollectionChangedEventArgs.NewStartingIndex,
-                                                               notifyCollectionChangedEventArgs.OldStartingIndex);
-                break;
-            }
-
-            case NotifyCollectionChangedAction.Reset:
-            {
-                newArgs = new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset);
-                break;
-            }
-
-            default:
-            {
-                throw new ArgumentOutOfRangeException(nameof(args));
+                _indexToViewModel[index] = viewModel;
+                _viewModelToIndex[viewModel] = index;
             }
         }
-
-        CollectionChanged?.Invoke(this, newArgs);
     }
 
     public void Dispose()
@@ -138,7 +178,7 @@ public class RealmWrapperCollection<T, TViewModel> : INotifyCollectionChanged, I
         _disposables.Dispose();
     }
 
-    private class LazyEnumerator(IEnumerator<T> collectionEnumerator, Func<T, TViewModel> viewModelFactory) : IEnumerator<TViewModel>
+    private class LazyEnumerator(IEnumerator<TModel> collectionEnumerator, Func<TModel, TViewModel> viewModelFactory) : IEnumerator<TViewModel>
     {
         public TViewModel Current => viewModelFactory(collectionEnumerator.Current);
 
@@ -151,15 +191,8 @@ public class RealmWrapperCollection<T, TViewModel> : INotifyCollectionChanged, I
         public void Dispose() => collectionEnumerator.Dispose();
     }
 
-    #region IList implementation that's not needed
+    #region IList Edit functions that are unsupported because this collection is read only
 
-    public void CopyTo(Array array, int index)
-    {
-        throw new NotImplementedException();
-    }
-
-    public bool IsSynchronized => false;
-    public object SyncRoot { get; } = new();
     public int Add(object? value) => throw new NotImplementedException();
 
     public void Clear()
@@ -182,5 +215,10 @@ public class RealmWrapperCollection<T, TViewModel> : INotifyCollectionChanged, I
         throw new NotImplementedException();
     }
 
-    #endregion
+    public void CopyTo(Array array, int index)
+    {
+        throw new NotImplementedException();
+    }
+
+    #endregion IList Edit functions that are unsupported because this collection is read only
 }

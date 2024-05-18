@@ -6,7 +6,7 @@ using RxRealm.Core.Models;
 
 namespace RxRealm.Core.ViewModels;
 
-public class ProductViewModel : ReactiveObject, IDisposable, IActivatableViewModel, IModelWrapperViewModel<Product>
+public class ProductViewModel : ReactiveObject, IDisposable, IActivatableViewModel, IModelWrapperViewModel<Product, Guid>
 {
     public ProductViewModel(Product product)
     {
@@ -31,14 +31,19 @@ public class ProductViewModel : ReactiveObject, IDisposable, IActivatableViewMod
                 .DisposeWith(disposables);
         });
     }
-    
+
     public Product Model { get; }
 
     public Guid Id { get; }
 
-    [ObservableAsProperty] public string? Name { get; }
-    [ObservableAsProperty] public Uri? ImageUri { get; }
-    [ObservableAsProperty] public decimal Price { get; }
+    [ObservableAsProperty]
+    public string? Name { get; }
+
+    [ObservableAsProperty]
+    public Uri? ImageUri { get; }
+
+    [ObservableAsProperty]
+    public decimal Price { get; }
 
     public void Dispose()
     {
