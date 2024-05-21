@@ -13,4 +13,12 @@ public static class CollectionExtensions
     {
         return Enumerable.Range(0, list.Count).Select(i => ((T)list[i]!, startIndex++));
     }
+
+    public static void ForEach<T>(this IEnumerable<T> source, Action<T> action)
+    {
+        foreach (var item in source)
+        {
+            action(item);
+        }
+    }
 }

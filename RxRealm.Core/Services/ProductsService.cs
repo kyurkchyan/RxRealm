@@ -2,13 +2,12 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Bogus;
 using DynamicData;
-using DynamicData.Binding;
 using Realms;
 using RxRealm.Core.Models;
 
 namespace RxRealm.Core.Services;
 
-public class ProductsService(IFileSystemService fileSystemService)
+public class ProductsService(IFileSystemService fileSystemService) : IDisposable
 {
     public string DatabasePath { get; } = Path.Combine(fileSystemService.AppDataFolderPath, "products.realm");
 
@@ -28,9 +27,7 @@ public class ProductsService(IFileSystemService fileSystemService)
         await InstallDatabaseIfNecessaryAsync(cancellationToken);
         var products = expression(Realm.All<Product>()).AsRealmCollection();
 
-        return new PaginatedResults<Product>(pageSize,
-                                             pagination
-                                                 => Observable.Return(GetPaginatedResponse(products, pagination)));
+        return new PaginatedRealmResults<Product>(products, pageSize);
     }
 
     public async Task<IConnectableObservable<IVirtualChangeSet<Product>>> GetVirtualizedProductsAsync(
@@ -136,6 +133,11 @@ public class ProductsService(IFileSystemService fileSystemService)
         await Realm.WriteAsync(() => Realm.Remove(product));
     }
 
+    public async Task RemoveRangeAsync(IQueryable<Product> products)
+    {
+        await Realm.WriteAsync(() => Realm.RemoveRange(products));
+    }
+
     public async Task UpdateAsync(Product product, Action<Product> updateAction)
     {
         await Realm.WriteAsync(() => updateAction(product));
@@ -152,5 +154,10 @@ public class ProductsService(IFileSystemService fileSystemService)
                                         result.Count,
                                         pagination.StartIndex,
                                         items.Count);
+    }
+
+    public void Dispose()
+    {
+        _realm?.Dispose();
     }
 }

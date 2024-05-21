@@ -25,6 +25,7 @@ public class RealmDynamicDataBenchmarks
     public async Task Setup()
     {
         _productsService = new ProductsService(new FileSystemService());
+        _productsService.DisposeWith(_disposables);
         await _productsService.InstallDatabaseIfNecessaryAsync();
     }
 
@@ -32,7 +33,7 @@ public class RealmDynamicDataBenchmarks
     public void LoadProductsFromRealm_WithWrapperCollection()
     {
         var products = _productsService.Realm.All<Product>().AsRealmCollection();
-        var productsWrapperCollection = new RealmWrapperCollection<Product, ProductViewModel>(products, p => new ProductViewModel(p));
+        var productsWrapperCollection = new RealmWrapperCollection<Product, ProductViewModel, Guid>(products, p => new ProductViewModel(p));
         var firstTenProducts = productsWrapperCollection.Take(10).ToList();
         Debug.WriteLine(firstTenProducts.Count);
     }

@@ -11,27 +11,29 @@ public class PaginatedResults<T> : IDisposable
 {
     private readonly int _pageSize;
     private readonly CompositeDisposable _cleanUp = new();
-    private readonly SourceList<T> _sourceList = new();
+
     private readonly BehaviorSubject<IVirtualRequest?> _pager = new(null);
     private readonly IConnectableObservable<PaginatedResponse<T>> _loadItems;
+
+    protected SourceList<T> SourceList { get; } = new();
 
     public PaginatedResults(int pageSize, Func<IVirtualRequest, IObservable<PaginatedResponse<T>>> virtualize)
     {
         _pageSize = pageSize;
-        _sourceList.DisposeWith(_cleanUp);
+        SourceList.DisposeWith(_cleanUp);
         _pager.DisposeWith(_cleanUp);
 
         // Load the items into the _sourceList when the _pager requests the next page
         _loadItems = _pager
             .WhereNotNull()
             .SelectMany(virtualize)
-            .Do(newItems => _sourceList.AddRange(newItems.Items))
+            .Do(newItems => SourceList.AddRange(newItems.Items))
             .Publish();
 
         HasMore = _loadItems.Select(virtualResponse => virtualResponse.Size < virtualResponse.TotalSize);
         TotalSize = _loadItems.Select(virtualResponse => virtualResponse.TotalSize);
 
-        var items = _sourceList.Connect().Publish();
+        var items = SourceList.Connect().Publish();
 
         Items = items.AsObservableList();
         Items.DisposeWith(_cleanUp);
@@ -65,8 +67,17 @@ public class PaginatedResults<T> : IDisposable
 
     public IObservable<int> TotalSize { get; }
 
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _cleanUp.Dispose();
+        }
+    }
+
     public void Dispose()
     {
-        _cleanUp.Dispose();
+        Dispose(true);
+        GC.SuppressFinalize(this);
     }
 }
