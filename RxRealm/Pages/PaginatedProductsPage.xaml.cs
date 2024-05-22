@@ -20,9 +20,28 @@ public partial class PaginatedProductsPage
             productCell.DisposeWith(Disposables);
             return productCell;
         });
+        ProductsCollectionView.SelectedItemTemplate = new DataTemplate(() =>
+        {
+            var productCell = new ProductViewModelCell(Activator);
+            productCell.BackgroundColor = Colors.Gray;
+            productCell.DisposeWith(Disposables);
+            return productCell;
+        });
 
         this.WhenActivated(disposables =>
         {
+            this.BindCommand(ViewModel, vm => vm.Add, v => v.AddButton)
+                .DisposeWith(Disposables);
+
+            this.BindCommand(ViewModel, vm => vm.Remove, v => v.RemoveButton)
+                .DisposeWith(Disposables);
+
+            this.BindCommand(ViewModel, vm => vm.ChangeName, v => v.ChangeNameButton)
+                .DisposeWith(Disposables);
+
+            this.Bind(ViewModel, vm => vm.SelectedProduct, v => v.ProductsCollectionView.SelectedItem)
+                .DisposeWith(Disposables);
+
             this.OneWayBind(ViewModel, vm => vm.Products, v => v.ProductsCollectionView.ItemsSource)
                 .DisposeWith(disposables);
 
@@ -44,13 +63,5 @@ public partial class PaginatedProductsPage
                 .BindTo(this, v => v.ProductsCollectionView.IsLoadMoreEnabled)
                 .DisposeWith(disposables);
         });
-    }
-
-    private void ProductsCollectionView_SelectionChanged(object? sender, CollectionViewSelectionChangedEventArgs e)
-    {
-        if (e.AddedItems.FirstOrDefault() is ProductViewModel product)
-        {
-            Navigation.PushAsync(new ProductDetailsPage(product.Id));
-        }
     }
 }

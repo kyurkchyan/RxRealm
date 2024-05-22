@@ -137,7 +137,6 @@ public class PaginatedRealmResultsShould : IAsyncLifetime
         AsyncContext.Run(async () =>
         {
             using var realm = GetRealm();
-            const int pageSize = 50;
             var paginatedProducts = new PaginatedRealmResults<Product>(realm.All<Product>().OrderBy(p => p.Price).AsRealmCollection());
             paginatedProducts.DisposeWith(_disposables);
             paginatedProducts.Items
@@ -164,14 +163,12 @@ public class PaginatedRealmResultsShould : IAsyncLifetime
         });
     }
 
-
     [Fact]
     public void DoNothing_WhenProductsAreRemovedFromDb_OutsideOfTheLoadedPage()
     {
         AsyncContext.Run(async () =>
         {
             using var realm = GetRealm();
-            const int pageSize = 50;
             var paginatedProducts = new PaginatedRealmResults<Product>(realm.All<Product>().OrderBy(p => p.Price).AsRealmCollection());
             paginatedProducts.DisposeWith(_disposables);
             paginatedProducts.Items
@@ -196,6 +193,180 @@ public class PaginatedRealmResultsShould : IAsyncLifetime
             });
         });
     }
+
+    [Fact]
+    public void AddProductToObservableCollection_WhenProductIsAddedInDb_InsideTheLoadedPage()
+    {
+        AsyncContext.Run(async () =>
+        {
+            using var realm = GetRealm();
+            const int pageSize = 50;
+            var paginatedProducts = new PaginatedRealmResults<Product>(realm.All<Product>().OrderBy(p => p.Price).AsRealmCollection());
+            paginatedProducts.DisposeWith(_disposables);
+            paginatedProducts.Items
+                             .Connect()
+                             .Bind(out ReadOnlyObservableCollection<Product> products)
+                             .Subscribe()
+                             .DisposeWith(_disposables);
+            await paginatedProducts.LoadNextPage().ToTask();
+
+            var productToAdd = new Product
+            {
+                Id = Guid.NewGuid(),
+                Name = "New Product",
+                Price = (products[products.Count / 2].Price + products[products.Count / 2 + 1].Price) / 2
+            };
+            await realm.WriteAsync(() => realm.Add(productToAdd));
+
+            await Extensions.RetryWithExponentialBackoff(() =>
+            {
+                using (new AssertionScope())
+                {
+                    products.Should().NotBeNull();
+                    products.Should().HaveCount(pageSize + 1);
+                    Product? addedProduct = products.FirstOrDefault(p => p.Id == productToAdd.Id);
+                    addedProduct.Should().NotBeNull();
+                    addedProduct!.Name.Should().Be(productToAdd.Name);
+                    addedProduct.Price.Should().Be(productToAdd.Price);
+                }
+            });
+        });
+    }
+
+    [Fact]
+    public void AddRangeOfProductsToObservableCollection_WhenProductsAreAddedInDb_InsideTheLoadedPage()
+    {
+        AsyncContext.Run(async () =>
+        {
+            using var realm = GetRealm();
+            const int pageSize = 50;
+            var paginatedProducts = new PaginatedRealmResults<Product>(realm.All<Product>().OrderBy(p => p.Price).AsRealmCollection());
+            paginatedProducts.DisposeWith(_disposables);
+            paginatedProducts.Items
+                             .Connect()
+                             .Bind(out ReadOnlyObservableCollection<Product> products)
+                             .Subscribe()
+                             .DisposeWith(_disposables);
+            await paginatedProducts.LoadNextPage().ToTask();
+
+            const int newItemsCount = 10;
+            decimal newPriceStart = products[products.Count / 2].Price;
+            decimal newPriceIncrease = (products[products.Count / 2 + 1].Price - newPriceStart) / newItemsCount;
+            var productsToAdd = Enumerable.Range(0, newItemsCount)
+                                          .Select(i => new Product
+                                          {
+                                              Id = Guid.NewGuid(),
+                                              Name = $"New Product {i}",
+                                              Price = newPriceStart + i * newPriceIncrease
+                                          })
+                                          .ToArray();
+
+            await realm.WriteAsync(() => realm.Add(productsToAdd));
+
+            await Extensions.RetryWithExponentialBackoff(() =>
+            {
+                using (new AssertionScope())
+                {
+                    products.Should().NotBeNull();
+                    products.Should().HaveCount(pageSize + newItemsCount);
+                    foreach (Product product in productsToAdd)
+                    {
+                        Product? addedProduct = products.FirstOrDefault(p => p.Id == product.Id);
+                        addedProduct.Should().NotBeNull();
+                        addedProduct!.Name.Should().Be(product.Name);
+                        addedProduct.Price.Should().Be(product.Price);
+                    }
+                }
+            });
+        });
+    }
+
+    [Fact]
+    public void AddOnlyRangeOfProductsThatAreInsideLoadedObservableCollection_WhenProductsAreAddedInDb_ThatHaveItemsOutsideTheLoadedPage()
+    {
+        AsyncContext.Run(async () =>
+        {
+            using var realm = GetRealm();
+            const int pageSize = 50;
+            var paginatedProducts = new PaginatedRealmResults<Product>(realm.All<Product>().OrderBy(p => p.Price).AsRealmCollection());
+            paginatedProducts.DisposeWith(_disposables);
+            paginatedProducts.Items
+                             .Connect()
+                             .Bind(out ReadOnlyObservableCollection<Product> products)
+                             .Subscribe()
+                             .DisposeWith(_disposables);
+            await paginatedProducts.LoadNextPage().ToTask();
+
+            const int newItemsCount = 10;
+            decimal maxPrice = products.Last().Price;
+            decimal newPriceStart = maxPrice - 5;
+            var productsToAdd = Enumerable.Range(0, newItemsCount)
+                                          .Select(i => new Product
+                                          {
+                                              Id = Guid.NewGuid(),
+                                              Name = $"New Product {i}",
+                                              Price = newPriceStart + i
+                                          })
+                                          .ToArray();
+
+            await realm.WriteAsync(() => realm.Add(productsToAdd));
+
+            await Extensions.RetryWithExponentialBackoff(() =>
+            {
+                using (new AssertionScope())
+                {
+                    products.Should().NotBeNull();
+                    products.Should().HaveCount(pageSize + newItemsCount / 2);
+                    var newProductsInLoadedPage = productsToAdd.Where(p => p.Price <= maxPrice).ToList();
+                    var newProductsOutsideLoadedPage = productsToAdd.Where(p => p.Price > maxPrice).ToList();
+                    foreach (Product product in newProductsInLoadedPage)
+                    {
+                        Product? addedProduct = products.FirstOrDefault(p => p.Id == product.Id);
+                        addedProduct.Should().NotBeNull();
+                        addedProduct!.Name.Should().Be(product.Name);
+                        addedProduct.Price.Should().Be(product.Price);
+                    }
+
+                    foreach (Product product in newProductsOutsideLoadedPage)
+                    {
+                        Product? addedProduct = products.FirstOrDefault(p => p.Id == product.Id);
+                        addedProduct.Should().BeNull();
+                    }
+                }
+            });
+        });
+    }
+
+    // [Fact]
+    // public void DoNothing_WhenProductsAreRemovedFromDb_OutsideOfTheLoadedPage()
+    // {
+    //     AsyncContext.Run(async () =>
+    //     {
+    //         using var realm = GetRealm();
+    //         var paginatedProducts = new PaginatedRealmResults<Product>(realm.All<Product>().OrderBy(p => p.Price).AsRealmCollection());
+    //         paginatedProducts.DisposeWith(_disposables);
+    //         paginatedProducts.Items
+    //                          .Connect()
+    //                          .Bind(out ReadOnlyObservableCollection<Product> products)
+    //                          .Subscribe()
+    //                          .DisposeWith(_disposables);
+    //         await paginatedProducts.LoadNextPage().ToTask();
+    //
+    //         var productsToDelete = realm.All<Product>().AsRealmCollection().Skip(60).Take(20).ToArray();
+    //         var deletedIds = productsToDelete.Select(p => p.Id).ToArray();
+    //         var filter = $"_id IN {{{string.Join(",", deletedIds.Select(id => $"uuid({id})"))}}}";
+    //         await realm.WriteAsync(() => realm.RemoveRange(realm.All<Product>().Filter(filter)));
+    //
+    //         await Extensions.RetryWithExponentialBackoff(() =>
+    //         {
+    //             using (new AssertionScope())
+    //             {
+    //                 products.Should().NotBeNull();
+    //                 products.Should().HaveCount(50);
+    //             }
+    //         });
+    //     });
+    // }
 
     private Realm GetRealm() => Realm.GetInstance(_configuration);
 

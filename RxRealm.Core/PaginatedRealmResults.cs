@@ -11,10 +11,12 @@ namespace RxRealm.Core;
 public class PaginatedRealmResults<T> : PaginatedResults<T>
     where T : notnull
 {
+    private readonly IRealmCollection<T> _realmCollection;
     private readonly CompositeDisposable _disposables = new();
 
     public PaginatedRealmResults(IRealmCollection<T> realmCollection, int pageSize = 50) : base(pageSize, Virtualize(realmCollection))
     {
+        _realmCollection = realmCollection;
         realmCollection
             .ObserveCollectionChanges()
             .Subscribe(HandleCollectionChanges)
@@ -89,7 +91,9 @@ public class PaginatedRealmResults<T> : PaginatedResults<T>
             }
             case NotifyCollectionChangedAction.Reset:
             {
+                var currentCount = SourceList.Count;
                 SourceList.Clear();
+                SourceList.AddRange(_realmCollection.Take(currentCount));
                 break;
             }
             default:

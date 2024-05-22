@@ -9,15 +9,45 @@
     xmlns:base="clr-namespace:RxRealm.Pages.Base"
     x:Class="RxRealm.Pages.PaginatedProductsPage">
     <ContentPage.Content>
-        <Grid>
+        <Grid
+            RowDefinitions="Auto,*"
+            ColumnDefinitions="*,*,*">
+            <Button
+                Grid.Row="0"
+                Grid.Column="0"
+                x:Name="AddButton"
+                Text="Add"
+                HorizontalOptions="Fill"
+                VerticalOptions="Fill"
+                Margin="8" />
+            <Button
+                Grid.Row="0"
+                Grid.Column="1"
+                x:Name="RemoveButton"
+                Text="Remove"
+                HorizontalOptions="Fill"
+                VerticalOptions="Fill"
+                Margin="8" />
+            <Button
+                Grid.Row="0"
+                Grid.Column="2"
+                x:Name="ChangeNameButton"
+                Text="Change Name"
+                HorizontalOptions="Fill"
+                VerticalOptions="Fill"
+                Margin="8" />
+
             <dx:DXCollectionView
+                Grid.Row="1"
+                Grid.ColumnSpan="3"
                 x:Name="ProductsCollectionView"
                 IsLoadMoreEnabled="True"
                 SelectionMode="Single"
-                SelectionChanged="ProductsCollectionView_SelectionChanged"
-                ItemSize="80">
-            </dx:DXCollectionView>
+                ItemSize="80" />
+
             <ActivityIndicator
+                Grid.Row="1"
+                Grid.ColumnSpan="3"
                 x:Name="BusyIndicator"
                 VerticalOptions="Center"
                 HorizontalOptions="Center" />
