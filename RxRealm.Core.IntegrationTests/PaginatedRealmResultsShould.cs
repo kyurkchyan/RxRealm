@@ -282,7 +282,7 @@ public class PaginatedRealmResultsShould : IAsyncLifetime
     }
 
     [Fact]
-    public void AddOnlyRangeOfProductsThatAreInsideLoadedObservableCollection_WhenProductsAreAddedInDb_ThatHaveItemsOutsideTheLoadedPage()
+    public void DoNothing_WhenProductsAreAddedInDb_OutsideOfTheLoadedPage()
     {
         AsyncContext.Run(async () =>
         {
@@ -299,7 +299,7 @@ public class PaginatedRealmResultsShould : IAsyncLifetime
 
             const int newItemsCount = 10;
             decimal maxPrice = products.Last().Price;
-            decimal newPriceStart = maxPrice - 5;
+            decimal newPriceStart = maxPrice + 10;
             var productsToAdd = Enumerable.Range(0, newItemsCount)
                                           .Select(i => new Product
                                           {
@@ -316,18 +316,9 @@ public class PaginatedRealmResultsShould : IAsyncLifetime
                 using (new AssertionScope())
                 {
                     products.Should().NotBeNull();
-                    products.Should().HaveCount(pageSize + newItemsCount / 2);
-                    var newProductsInLoadedPage = productsToAdd.Where(p => p.Price <= maxPrice).ToList();
-                    var newProductsOutsideLoadedPage = productsToAdd.Where(p => p.Price > maxPrice).ToList();
-                    foreach (Product product in newProductsInLoadedPage)
-                    {
-                        Product? addedProduct = products.FirstOrDefault(p => p.Id == product.Id);
-                        addedProduct.Should().NotBeNull();
-                        addedProduct!.Name.Should().Be(product.Name);
-                        addedProduct.Price.Should().Be(product.Price);
-                    }
+                    products.Should().HaveCount(pageSize);
 
-                    foreach (Product product in newProductsOutsideLoadedPage)
+                    foreach (Product product in productsToAdd)
                     {
                         Product? addedProduct = products.FirstOrDefault(p => p.Id == product.Id);
                         addedProduct.Should().BeNull();
