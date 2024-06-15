@@ -19,7 +19,7 @@ public class ProductsService(IFileSystemService fileSystemService) : IDisposable
         return Realm.GetInstance(databasePath);
     }
 
-    public async Task<PaginatedResults<Product>> GetPaginatedProductsAsync(
+    public async Task<IPaginatedResults<Product>> GetPaginatedProductsAsync(
         Func<IQueryable<Product>, IQueryable<Product>> expression,
         int pageSize,
         CancellationToken cancellationToken = default)

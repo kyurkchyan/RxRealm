@@ -18,7 +18,7 @@ public class PaginatedProductsViewModel : ReactiveObject, IActivatableViewModel,
     private const int PageSize = 50;
 
     [Reactive]
-    private PaginatedResults<Product>? PaginatedProducts { get; set; }
+    private IPaginatedResults<Product>? PaginatedProducts { get; set; }
 
     internal ObservableCollectionExtended<ProductViewModel> InternalProducts { get; } = [];
     public CompositeDisposable Disposables { get; } = new();
